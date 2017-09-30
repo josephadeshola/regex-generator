@@ -71,6 +71,10 @@ upper('Z').
 letter(C) :- lower(C).
 letter(C) :- upper(C).
 
+word(C) :- letter(C).
+word(C) :- digit(C).
+word('_').
+
 unescaped(C) :- letter(C).
 unescaped(C) :- digit(C).
 
@@ -92,9 +96,13 @@ regx_i([C|Cs], [C|Rs]) :- unescaped(C), regx_i(Cs, Rs).
 % Recognize escaped characters as themselves if they should be escaped.
 regx_i([C|Cs], [E|Rs]) :- escaped(C, E), regx_i(Cs, Rs).
 
-% Recognize digits.
-regx_i([C|Cs], [\d|Rs]) :- digit(C), regx_i(Cs, Rs).
+% Recognize character classes.
+regx_i([C|Cs], ['\\d'|Rs]) :- digit(C), regx_i(Cs, Rs).
+regx_i([C|Cs], ['[A-Z]'|Rs]) :- upper(C), regx_i(Cs, Rs).
+regx_i([C|Cs], ['[a-z]'|Rs]) :- lower(C), regx_i(Cs, Rs).
+regx_i([C|Cs], ['[a-zA-Z]'|Rs]) :- letter(C), regx_i(Cs, Rs).
+regx_i([C|Cs], ['\\w'|Rs]) :- word(C), regx_i(Cs, Rs).
 
 % Recognize repetition.
-regx_i([C|Cs], [R,+|Rs]) :- regx_i([C], [R]), regx_i(Cs, [R|Rs]).
+regx_i([C,C2|Cs], [R,+|Rs]) :- regx_i([C], [R]), regx_i([C2], [R]), regx_i(Cs, Rs).
 regx_i([C|Cs], [R,+|Rs]) :- regx_i([C], [R]), regx_i(Cs, [R,+|Rs]).
