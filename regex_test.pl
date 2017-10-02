@@ -1,15 +1,13 @@
 :- use_module(library(plunit)).
+:- consult('regex.pl').
 
-:- set_prolog_flag('double_quotes', 'chars').
 
-:- begin_tests(regx).
+:- begin_tests(regex).
 
-single_char_regx(S, R) :- regx(S, R), length(R, 1).
-multi_input_regx([S|Ss], R) :- regx(S, R), multi_input_regx(Ss, R).
-multi_input_regx([], R).
+single_char_regex(S, R) :- regex(S, R), length(R, 1).
 
 test(digit) :-
-    findall(R, single("1", R), Rs),
+    findall(R, single_char_regex("1", R), Rs),
         Rs == [
             ['1'],
             ['\\d'],
@@ -17,13 +15,13 @@ test(digit) :-
         ].
 
 test(escaped) :-
-    findall(R, single_char_regx(".", R), Rs),
+    findall(R, single_char_regex(".", R), Rs),
         Rs == [
             ['\\.']
         ].
 
 test(lower) :-
-    findall(R, single_char_regx("a", R), Rs),
+    findall(R, single_char_regex("a", R), Rs),
         Rs == [
             ['a'],
             ['[a-z]'],
@@ -32,7 +30,7 @@ test(lower) :-
         ].
 
 test(repetition) :-
-    findall(R, multi_input_regx(["a", "aa", "aaa"], R), Rs),
+    findall(R, regex_multi(["a", "aa", "aaa"], R), Rs),
         Rs == [
             ['a',+],
             ['[a-z]',+],
@@ -40,4 +38,13 @@ test(repetition) :-
             ['\\w',+]
         ].
 
-:- end_tests(regx).
+test(negation) :-
+    findall(R, regex_multi(["12", "345"], ["6"], R), Rs),
+        Rs == [
+            ['\\d','\\d',+],
+            ['\\d','\\w',+],
+            ['\\w','\\d',+],
+            ['\\w','\\w',+]
+        ].
+
+:- end_tests(regex).
