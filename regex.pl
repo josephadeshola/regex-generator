@@ -84,25 +84,25 @@ escaped(C, E) :- escaped(C), atom_concat(\, C, E).
 
 % Start case and base case.
 
-regx(Cs, Rs) :- regx_i(Cs, Rs).
-regx_i([], []).
+regx(Cs, [R|Rs]) :- regx([], Cs, [R|Rs]).
+regx([], [], []).
 
 
 % Regular expressions.
 
 % Recognize unescaped characters as themselves.
-regx_i([C|Cs], [C|Rs]) :- unescaped(C), regx_i(Cs, Rs).
+regx(Cs, [C|Ps], [C|Rs]) :- unescaped(C), regx(Cs, Ps, Rs).
 
 % Recognize escaped characters as themselves if they should be escaped.
-regx_i([C|Cs], [E|Rs]) :- escaped(C, E), regx_i(Cs, Rs).
+regx(Cs, [C|Ps], [E|Rs]) :- escaped(C, E), regx(Cs, Ps, Rs).
 
 % Recognize character classes.
-regx_i([C|Cs], ['\\d'|Rs]) :- digit(C), regx_i(Cs, Rs).
-regx_i([C|Cs], ['[A-Z]'|Rs]) :- upper(C), regx_i(Cs, Rs).
-regx_i([C|Cs], ['[a-z]'|Rs]) :- lower(C), regx_i(Cs, Rs).
-regx_i([C|Cs], ['[a-zA-Z]'|Rs]) :- letter(C), regx_i(Cs, Rs).
-regx_i([C|Cs], ['\\w'|Rs]) :- word(C), regx_i(Cs, Rs).
+regx(Cs, [C|Ps], ['\\d'|Rs]) :- digit(C), regx(Cs, Ps, Rs).
+regx(Cs, [C|Ps], ['[A-Z]'|Rs]) :- upper(C), regx(Cs, Ps, Rs).
+regx(Cs, [C|Ps], ['[a-z]'|Rs]) :- lower(C), regx(Cs, Ps, Rs).
+regx(Cs, [C|Ps], ['[a-zA-Z]'|Rs]) :- letter(C), regx(Cs, Ps, Rs).
+regx(Cs, [C|Ps], ['\\w'|Rs]) :- word(C), regx(Cs, Ps, Rs).
 
 % Recognize repetition.
-regx_i([C,C2|Cs], [R,+|Rs]) :- regx_i([C], [R]), regx_i([C2], [R]), regx_i(Cs, Rs).
-regx_i([C|Cs], [R,+|Rs]) :- regx_i([C], [R]), regx_i(Cs, [R,+|Rs]).
+regx(Cs, [C,C2|Ps], [R,+|Rs]) :- regx(_, [C], [R]), regx(_, [C2], [R]), regx(Cs, Ps, Rs).
+regx(Cs, [C|Ps], [R,+|Rs]) :- regx(_, [C], [R]), regx(Cs, Ps, [R,+|Rs]).
