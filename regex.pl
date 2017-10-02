@@ -104,5 +104,5 @@ regx(Cs, [C|Ps], ['[a-zA-Z]'|Rs]) :- letter(C), regx(Cs, Ps, Rs).
 regx(Cs, [C|Ps], ['\\w'|Rs]) :- word(C), regx(Cs, Ps, Rs).
 
 % Recognize repetition.
-regx(Cs, [C,C2|Ps], [R,+|Rs]) :- regx(_, [C], [R]), regx(_, [C2], [R]), regx(Cs, Ps, Rs).
-regx(Cs, [C|Ps], [R,+|Rs]) :- regx(_, [C], [R]), regx(Cs, Ps, [R,+|Rs]).
+regx([], [C], [R,+]) :- regx([], [C], [R]).
+regx(Cs, [C|Ps], [R,+|Rs]) :- regx([], [C], [R]), regx(Cs, Ps, [R,+|Rs]).

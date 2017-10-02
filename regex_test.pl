@@ -32,7 +32,7 @@ test(lower) :-
         ].
 
 test(repetition) :-
-    findall(R, multi_input_regx(["aa", "aaa"], R), Rs),
+    findall(R, multi_input_regx(["a", "aa", "aaa"], R), Rs),
         Rs == [
             ['a',+],
             ['[a-z]',+],
