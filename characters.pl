@@ -72,6 +72,7 @@ upper('Z').
 letter(C) :- lower(C).
 letter(C) :- upper(C).
 
+:- dynamic word/1.
 word(C) :- letter(C).
 word(C) :- digit(C).
 word('_').

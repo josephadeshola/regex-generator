@@ -18,8 +18,8 @@ regex(Cs, R) :- regex_tokens([], Cs, Rs), regex_encode(Rs, R).
 % If Rs is not bound, returns (as Rs) all implemented regular expressions that match all strings in Ss. No duplicates
 %   will be returned.
 % regex_multi([S1, S2, ..., Sn], Rs) is equivalent to regex(S1, Rs), regex(S2, Rs), ..., regex(Sn, Rs).
+regex_multi([S], R) :- regex(S, R), !.
 regex_multi([S|Ss], R) :- regex(S, R), regex_multi(Ss, R).
-regex_multi([], _).
 
 % procedure regex_multi(+Ss, +Xs, ?Rs):
 %   +Ss - list of strings or list of lists of characters
@@ -30,9 +30,10 @@ regex_multi([], _).
 %   and strings in Xs. No duplicates will be returned.
 % regex_multi([S1, S2, ..., Sn], [X1, X2, ..., Xn], Rs) is equivalent to regex(S1, Rs), regex(S2, Rs), ...,
 %   regex(Sn, Rs), \+ regex(X1, Rs), \+ regex(X2, Rs), ..., \+ regex(Xn, Rs).
+regex_multi([S], Xs, R) :- regex(S, R), regex_multi([], Xs, R), !.
 regex_multi([S|Ss], Xs, R) :- regex(S, R), regex_multi(Ss, Xs, R).
-regex_multi([], [X|Xs], R) :- \+regex(X, R), regex_multi([], Xs, R).
-regex_multi([], [], _).
+regex_multi([], [X], R) :- \+ regex(X, R), !.
+regex_multi([], [X|Xs], R) :- \+ regex(X, R), regex_multi([], Xs, R).
 
 
 % Convert regular expression tokens to regular expression strings.
@@ -58,8 +59,8 @@ regex_tokens(Cs, [C|Ps], [class('[a-zA-Z]')|Rs]) :- letter(C), regex_tokens(Cs, 
 regex_tokens(Cs, [C|Ps], [class('\\w')|Rs]) :- word(C), regex_tokens(Cs, Ps, Rs).
 
 % Recognize repetition.
-regex_tokens([], [C], [plus(R)]) :- iterable(R), regex_tokens([], [C], [R]).
 regex_tokens(Cs, [C|Ps], [plus(R)|Rs]) :- iterable(R), regex_tokens([], [C], [R]), regex_tokens(Cs, Ps, [plus(R)|Rs]).
+regex_tokens(Cs, [C|Ps], [plus(R)|Rs]) :- iterable(R), regex_tokens([], [C], [R]), regex_tokens(Cs, Ps, Rs).
 
 % Base case.
 regex_tokens([], [], []).
