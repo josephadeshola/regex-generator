@@ -1,3 +1,4 @@
+:- use_module(library(lists)).
 :- consult('characters.pl').
 
 % Strings should be interpreted as a list of character atoms.
@@ -9,7 +10,7 @@
 %   ?Rs - list of elements in a regular expression
 % If Rs is bound, checks if the regular expression represented by Rs matches Cs.
 % If Rs is not bound, returns (as Rs) all implemented regular expressions that match Cs. No duplicates will be returned.
-regex(Cs, R) :- regex_tokens([], Cs, Rs), regex_encode(Rs, R).
+regex(Cs, R) :- regex_tokens(Cs, [], Rs), validate(Rs), regex_encode(Rs, R).
 
 % procedure regex_multi(+Ss, ?Rs):
 %   +Ss - list of strings or list of lists of characters
@@ -41,29 +42,45 @@ regex_encode([R|Rs], S) :- regex_encode(R, Sr), regex_encode(Rs, Ss), atom_conca
 regex_encode([], '').
 regex_encode(class(C), C).
 regex_encode(plus(E), P) :- regex_encode(E, C), atom_concat(C, +, P).
+regex_encode(group(E), G) :- regex_encode(E, R), atom_concat('(', R, O), atom_concat(O, ')', G).
+
+
+% Don't allow groups on their own.
+validate([R|Rs]) :- \+ functor(R, group, 1), validate(Rs).
+validate([]).
 
 
 % Regular expression rules.
 
+regex_tokens(Cs, Acc, Rs) :- regex_tokens(Cs, Acc, Rs, '').
+
 % Recognize unescaped characters as themselves.
-regex_tokens(Cs, [C|Ps], [class(C)|Rs]) :- unescaped(C), regex_tokens(Cs, Ps, Rs).
+regex_tokens([C|Cs], Acc, Rs, _) :- unescaped(C), regex_tokens(Cs, [class(C)|Acc], Rs).
 
 % Recognize escaped characters as themselves if they should be escaped.
-regex_tokens(Cs, [C|Ps], [class(E)|Rs]) :- escaped(C, E), regex_tokens(Cs, Ps, Rs).
+regex_tokens([C|Cs], Acc, Rs, _) :- escaped(C, E), regex_tokens(Cs, [class(E)|Acc], Rs).
 
 % Recognize character classes.
-regex_tokens(Cs, [C|Ps], [class('\\d')|Rs]) :- digit(C), regex_tokens(Cs, Ps, Rs).
-regex_tokens(Cs, [C|Ps], [class('[A-Z]')|Rs]) :- upper(C), regex_tokens(Cs, Ps, Rs).
-regex_tokens(Cs, [C|Ps], [class('[a-z]')|Rs]) :- lower(C), regex_tokens(Cs, Ps, Rs).
-regex_tokens(Cs, [C|Ps], [class('[a-zA-Z]')|Rs]) :- letter(C), regex_tokens(Cs, Ps, Rs).
-regex_tokens(Cs, [C|Ps], [class('\\w')|Rs]) :- word(C), regex_tokens(Cs, Ps, Rs).
+regex_tokens([C|Cs], Acc, Rs, _) :- digit(C), regex_tokens(Cs, [class('\\d')|Acc], Rs).
+regex_tokens([C|Cs], Acc, Rs, _) :- upper(C), regex_tokens(Cs, [class('[A-Z]')|Acc], Rs).
+regex_tokens([C|Cs], Acc, Rs, _) :- lower(C), regex_tokens(Cs, [class('[a-z]')|Acc], Rs).
+regex_tokens([C|Cs], Acc, Rs, _) :- letter(C), regex_tokens(Cs, [class('[a-zA-Z]')|Acc], Rs).
+regex_tokens([C|Cs], Acc, Rs, _) :- word(C), regex_tokens(Cs, [class('\\w')|Acc], Rs).
 
 % Recognize repetition.
-regex_tokens(Cs, [C|Ps], [plus(R)|Rs]) :- iterable(R), regex_tokens([], [C], [R]), regex_tokens(Cs, Ps, [plus(R)|Rs]).
-regex_tokens(Cs, [C|Ps], [plus(R)|Rs]) :- iterable(R), regex_tokens([], [C], [R]), regex_tokens(Cs, Ps, Rs).
+regex_tokens([C|Cs], Acc, Rs, F) :- \+ F = plus, regex_tokens([C], [], [R], plus), regex_tokens(Cs, [plus(R)|Acc], Rs).
+regex_tokens([C|Cs], [plus(R)|Acc], Rs, F) :- \+ F = plus, regex_tokens([C], [], [R], plus), regex_tokens(Cs, [plus(R)|Acc], Rs).
+
+% Allow groups.
+regex_tokens(Cs, Acc, Rs, F) :- \+ F = group, create_group(Cs, Gs, Os), regex_tokens(Gs, [], R, group), regex_tokens(Os, [group(R)|Acc], Rs).
+
+% Allow group repetition.
+regex_tokens(Cs, Acc, Rs, F) :- \+ F = group, create_group(Cs, Gs, Os), regex_tokens(Gs, [], R, group), regex_tokens(Os, [plus(group(R))|Acc], Rs).
+regex_tokens(Cs,[plus(group(R))|Acc], Rs, F) :- \+ F = group, create_group(Cs, R, _, Os), regex_tokens(Os, [plus(group(R))|Acc], Rs).
 
 % Base case.
-regex_tokens([], [], []).
+regex_tokens("", Acc, Rs, _) :- reverse(Acc, Rs).
 
-% Allow iteration only on certain types of regex tokens.
-iterable(class(_)).
+% Split into groups.
+create_group(T, G, O) :- append(G, O, T), length(G, L), L >= 2.
+create_group(T, R, G, O) :- append(G, O, T), length(G, L), L >= 2, regex_tokens(G, [], R).

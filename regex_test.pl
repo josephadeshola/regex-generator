@@ -50,4 +50,13 @@ test(negation) :-
             '\\d+\\d+'
         ].
 
+test(group_repetition) :-
+    findall(R, regex_multi(["12", "1212"], ["13", "3232"], R), Rs),
+        Rs == [
+            '(12)+',
+            '(12+)+',
+            '(1+2)+',
+            '(1+2+)+'
+        ].
+
 :- end_tests(regex).
