@@ -4,7 +4,9 @@
 % Regular expression rules.
 
 % Recognize backreferences in single-character groups.
-regex_tokens(Cs, Acc, Rs, flags(F, [G|Gs])) :- matches(Cs, [G|Gs], N, Os), regex_tokens(Os, [back(N)|Acc], Rs, flags(F, [G|Gs])).
+regex_tokens(Cs, Acc, Rs, flags(F, [G|Gs])) :-
+    matches(Cs, [G|Gs], N, Os),
+    regex_tokens(Os, [back(N)|Acc], Rs, flags(F, [G|Gs])).
 
 % Recognize unescaped characters as themselves.
 regex_tokens([C|Cs], Acc, Rs, F) :- unescaped(C), regex_tokens(Cs, [class(C)|Acc], Rs, F).
@@ -20,15 +22,32 @@ regex_tokens([C|Cs], Acc, Rs, F) :- letter(C), regex_tokens(Cs, [class('[a-zA-Z]
 regex_tokens([C|Cs], Acc, Rs, F) :- word(C), regex_tokens(Cs, [class('\\w')|Acc], Rs, F).
 
 % Recognize repetition.
-regex_tokens([C|Cs], Acc, Rs, F) :- \+ F = plus, regex_tokens([C], [], [R], plus), regex_tokens(Cs, [plus(R)|Acc], Rs, F), \+ Acc = [R|_], \+ Acc = [plus(R)|_].
-regex_tokens([C|Cs], [plus(R)|Acc], Rs, F) :- \+ F = plus, regex_tokens([C], [], [R], plus), regex_tokens(Cs, [plus(R)|Acc], Rs, F).
+regex_tokens([C|Cs], Acc, Rs, F) :-
+    \+ F = plus,
+    regex_tokens([C], [], [R], plus),
+    regex_tokens(Cs, [plus(R)|Acc], Rs, F), \+ Acc = [R|_], \+ Acc = [plus(R)|_].
+regex_tokens([C|Cs], [plus(R)|Acc], Rs, F) :-
+    \+ F = plus,
+    regex_tokens([C], [], [R], plus),
+    regex_tokens(Cs, [plus(R)|Acc], Rs, F).
 
 % Allow groups.
-regex_tokens(Cs, Acc, Rs, flags(F, G)) :- \+ F = group, create_group(Cs, Gs, Os), regex_tokens(Gs, [], R, group), regex_tokens(Os, [group(R)|Acc], Rs, flags(F, [Gs|G])).
+regex_tokens(Cs, Acc, Rs, flags(F, G)) :-
+    \+ F = group,
+    create_group(Cs, Gs, Os),
+    regex_tokens(Gs, [], R, group),
+    regex_tokens(Os, [group(R)|Acc], Rs, flags(F, [Gs|G])).
 
 % Allow group repetition.
-regex_tokens(Cs, Acc, Rs, F) :- \+ F = group, create_group(Cs, Gs, Os), regex_tokens(Gs, [], R, group), regex_tokens(Os, [plus(group(R))|Acc], Rs, F).
-regex_tokens(Cs,[plus(group(R))|Acc], Rs, F) :- \+ F = group, create_group(Cs, R, _, Os), regex_tokens(Os, [plus(group(R))|Acc], Rs, F).
+regex_tokens(Cs, Acc, Rs, F) :-
+    \+ F = group,
+    create_group(Cs, Gs, Os),
+    regex_tokens(Gs, [], R, group),
+    regex_tokens(Os, [plus(group(R))|Acc], Rs, F).
+regex_tokens(Cs,[plus(group(R))|Acc], Rs, F) :-
+    \+ F = group,
+    create_group(Cs, R, _, Os),
+    regex_tokens(Os, [plus(group(R))|Acc], Rs, F).
 
 % Base case.
 regex_tokens("", Acc, Rs, _) :- reverse(Acc, Rs).
