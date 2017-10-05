@@ -45,12 +45,8 @@ test(repetition) :-
 test(negation) :-
     findall(R, regex_multi(["12", "345"], ["6"], R), Rs),
         Rs == [
-            '\\d\\d+',
             '\\d+\\d',
-            '\\d+\\d+',
-            '(\\d\\d+)+',
-            '(\\d+\\d)+',
-            '(\\d+\\d+)+'
+            '(\\d+\\d)+'
         ].
 
 test(group_repetition) :-

@@ -19,8 +19,8 @@ regex(Cs, R) :- regex_tokens(Cs, [], Rs), validate(Rs), regex_encode(Rs, R).
 % If Rs is not bound, returns (as Rs) all implemented regular expressions that match all strings in Ss. No duplicates
 %   will be returned.
 % regex_multi([S1, S2, ..., Sn], Rs) is equivalent to regex(S1, Rs), regex(S2, Rs), ..., regex(Sn, Rs).
-regex_multi([S], R) :- regex(S, R), !.
-regex_multi([S|Ss], R) :- regex(S, R), regex_multi(Ss, R).
+regex_multi([S,S2|Ss], R) :- regex(S, R), regex_multi([S2|Ss], R).
+regex_multi([S], R) :- regex(S, R).
 
 % procedure regex_multi(+Ss, +Xs, ?Rs):
 %   +Ss - list of strings or list of lists of characters
@@ -31,10 +31,9 @@ regex_multi([S|Ss], R) :- regex(S, R), regex_multi(Ss, R).
 %   and strings in Xs. No duplicates will be returned.
 % regex_multi([S1, S2, ..., Sn], [X1, X2, ..., Xn], Rs) is equivalent to regex(S1, Rs), regex(S2, Rs), ...,
 %   regex(Sn, Rs), \+ regex(X1, Rs), \+ regex(X2, Rs), ..., \+ regex(Xn, Rs).
-regex_multi([S], Xs, R) :- regex(S, R), regex_multi([], Xs, R), !.
 regex_multi([S|Ss], Xs, R) :- regex(S, R), regex_multi(Ss, Xs, R).
-regex_multi([], [X], R) :- \+ regex(X, R), !.
-regex_multi([], [X|Xs], R) :- \+ regex(X, R), regex_multi([], Xs, R).
+regex_multi([], [X], R) :- \+ regex(X, R).
+regex_multi([], [X,X2|Xs], R) :- \+ regex(X, R), regex_multi([], [X2|Xs], R).
 
 
 % Convert regular expression tokens to regular expression strings.
@@ -43,12 +42,13 @@ regex_encode([], '').
 regex_encode(class(C), C).
 regex_encode(plus(E), P) :- regex_encode(E, C), atom_concat(C, +, P).
 regex_encode(group(E), G) :- regex_encode(E, R), atom_concat('(', R, O), atom_concat(O, ')', G).
+regex_encode(back(N), B) :- atom_concat('$', N, B).
 
 
 % Don't allow groups on their own.
 validate([R|Rs]) :- \+ functor(R, group, 1), \+ functor(R, plus, 1), validate(Rs).
 validate([plus(R)|Rs]) :- \+ functor(R, group, 1), validate(Rs).
-validate([plus(group(R))|Rs]) :- length(R, L), L >= 2, validate(Rs).
+validate([plus(group(R))|Rs]) :- length(R, L), L >= 2, validate(R), validate(Rs).
 validate([]).
 
 
@@ -70,7 +70,7 @@ regex_tokens([C|Cs], Acc, Rs, _) :- letter(C), regex_tokens(Cs, [class('[a-zA-Z]
 regex_tokens([C|Cs], Acc, Rs, _) :- word(C), regex_tokens(Cs, [class('\\w')|Acc], Rs).
 
 % Recognize repetition.
-regex_tokens([C|Cs], Acc, Rs, F) :- \+ F = plus, regex_tokens([C], [], [R], plus), regex_tokens(Cs, [plus(R)|Acc], Rs).
+regex_tokens([C|Cs], Acc, Rs, F) :- \+ F = plus, regex_tokens([C], [], [R], plus), regex_tokens(Cs, [plus(R)|Acc], Rs), \+ Acc = [R|_], \+ Acc = [plus(R)|_].
 regex_tokens([C|Cs], [plus(R)|Acc], Rs, F) :- \+ F = plus, regex_tokens([C], [], [R], plus), regex_tokens(Cs, [plus(R)|Acc], Rs).
 
 % Allow groups.
@@ -84,5 +84,5 @@ regex_tokens(Cs,[plus(group(R))|Acc], Rs, F) :- \+ F = group, create_group(Cs, R
 regex_tokens("", Acc, Rs, _) :- reverse(Acc, Rs).
 
 % Split into groups.
-create_group(T, G, O) :- append(G, O, T), length(G, L), L >= 2.
+create_group([T1,T2|Ts], G, O) :- append(G, O, [T1,T2|Ts]), length(G, Lg), Lg >= 1.
 create_group(T, R, G, O) :- append(G, O, T), length(G, L), L >= 2, regex_tokens(G, [], R).
