@@ -43,6 +43,7 @@ regex_tokens(Cs, Acc, Rs, F) :-
     \+ F = group,
     create_group(Cs, Gs, Os),
     regex_tokens(Gs, [], R, group),
+    \+ R = [plus(_)], % don't allow stuff of form (<>+)+
     regex_tokens(Os, [plus(group(R))|Acc], Rs, F).
 regex_tokens(Cs,[plus(group(R))|Acc], Rs, F) :-
     \+ F = group,

@@ -5,8 +5,8 @@ validate(Rs) :- back_count(Rs, [], N), validate(Rs, N).
 validate([R|Rs], G) :- \+ functor(R, group, 1), \+ functor(R, plus, 1), validate(Rs, G).
 validate([plus(R)|Rs], G) :- \+ contains_group(R), validate(Rs, G).
 validate([plus(group(R))|Rs], G) :- length(R, L), L >= 2, group_validate(R), validate(Rs, G).
-validate([group(R)|Rs], G) :- length(R, 1), G > 0, group_validate(R), Gn is G - 1, validate(Rs, Gn).
-validate([plus(group(R))|Rs], G) :- length(R, 1), G > 0, group_validate(R), Gn is G - 1, validate(Rs, Gn).
+validate([group([R])|Rs], G) :- G > 0, group_validate([R]), Gn is G - 1, validate(Rs, Gn).
+validate([plus(group([R]))|Rs], G) :- group_validate([R]), Gn is G - 1, validate(Rs, Gn).
 validate([], _).
 
 group_validate(R) :-  \+ contains_group(R), validate(R).
