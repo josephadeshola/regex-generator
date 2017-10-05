@@ -47,7 +47,10 @@ test(negation) :-
         Rs == [
             '\\d\\d+',
             '\\d+\\d',
-            '\\d+\\d+'
+            '\\d+\\d+',
+            '(\\d\\d+)+',
+            '(\\d+\\d)+',
+            '(\\d+\\d+)+'
         ].
 
 test(group_repetition) :-

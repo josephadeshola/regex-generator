@@ -46,7 +46,9 @@ regex_encode(group(E), G) :- regex_encode(E, R), atom_concat('(', R, O), atom_co
 
 
 % Don't allow groups on their own.
-validate([R|Rs]) :- \+ functor(R, group, 1), validate(Rs).
+validate([R|Rs]) :- \+ functor(R, group, 1), \+ functor(R, plus, 1), validate(Rs).
+validate([plus(R)|Rs]) :- \+ functor(R, group, 1), validate(Rs).
+validate([plus(group(R))|Rs]) :- length(R, L), L >= 2, validate(Rs).
 validate([]).
 
 
