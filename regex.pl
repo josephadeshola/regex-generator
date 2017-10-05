@@ -10,7 +10,7 @@
 %   ?Rs - list of elements in a regular expression
 % If Rs is bound, checks if the regular expression represented by Rs matches Cs.
 % If Rs is not bound, returns (as Rs) all implemented regular expressions that match Cs. No duplicates will be returned.
-regex(Cs, R) :- regex_tokens(Cs, [], Rs), validate(Rs), regex_encode(Rs, R).
+regex(Cs, R) :- regex_tokens(Cs, [], Rs, flags('', [])), validate(Rs), regex_encode(Rs, R).
 
 % procedure regex_multi(+Ss, ?Rs):
 %   +Ss - list of strings or list of lists of characters
@@ -42,39 +42,59 @@ regex_encode([], '').
 regex_encode(class(C), C).
 regex_encode(plus(E), P) :- regex_encode(E, C), atom_concat(C, +, P).
 regex_encode(group(E), G) :- regex_encode(E, R), atom_concat('(', R, O), atom_concat(O, ')', G).
-regex_encode(back(N), B) :- atom_concat('$', N, B).
+% This number -> atom conversion means we only support up to 9 groups.  Okay for now.
+regex_encode(back(N), B) :- number_chars(N, [C]), atom_concat('$', C, B).
 
 
-% Don't allow groups on their own.
-validate([R|Rs]) :- \+ functor(R, group, 1), \+ functor(R, plus, 1), validate(Rs).
-validate([plus(R)|Rs]) :- \+ functor(R, group, 1), validate(Rs).
-validate([plus(group(R))|Rs]) :- length(R, L), L >= 2, validate(R), validate(Rs).
-validate([]).
+% Don't allow nested groups, or single element groups that aren't backreferenced.
+validate(Rs) :- back_count(Rs, [], N), validate(Rs, N).
+validate([R|Rs], G) :- \+ functor(R, group, 1), \+ functor(R, plus, 1), validate(Rs, G).
+validate([plus(R)|Rs], G) :- \+ contains_group(R), validate(Rs, G).
+validate([plus(group(R))|Rs], G) :- length(R, L), L >= 2, group_validate(R), validate(Rs, G).
+validate([group(R)|Rs], G) :- length(R, 1), G > 0, group_validate(R), validate(Rs, G).
+validate([plus(group(R))|Rs], G) :- length(R, 1), G > 0, group_validate(R), Gn is G - 1, validate(Rs, Gn).
+validate([], _).
+
+group_validate(R) :-  \+ contains_group(R), validate(R).
+
+contains_group(group(_)).
+contains_group([group(_)|_]).
+contains_group([plus(R)|_]) :- contains_group(R).
+contains_group([_|Rs]) :- contains_group(Rs).
+
+back_count([], _, 0).
+back_count([R|Rs], Bs, N) :- \+ functor(R, back, 1), back_count(Rs, Bs, N).
+back_count([back(B)|Rs], Bs, N) :- member(B, Bs), back_count(Rs, Bs, N).
+back_count([back(B)|Rs], Bs, N) :- \+ member(B, Bs), back_count(Rs, [B|Bs], Bn), N is Bn + 1.
+
 
 
 % Regular expression rules.
 
 regex_tokens(Cs, Acc, Rs) :- regex_tokens(Cs, Acc, Rs, '').
 
+% Recognize backreferences in single-character groups.
+regex_tokens([C|Cs], Acc, Rs, flags(F, [G|Gs])) :- matches(C, [G|Gs], N), regex_tokens(Cs, [back(N)|Acc], Rs, flags(F, [C|Gs])).
+
 % Recognize unescaped characters as themselves.
-regex_tokens([C|Cs], Acc, Rs, _) :- unescaped(C), regex_tokens(Cs, [class(C)|Acc], Rs).
+regex_tokens([C|Cs], Acc, Rs, F) :- unescaped(C), regex_tokens(Cs, [class(C)|Acc], Rs, F).
 
 % Recognize escaped characters as themselves if they should be escaped.
-regex_tokens([C|Cs], Acc, Rs, _) :- escaped(C, E), regex_tokens(Cs, [class(E)|Acc], Rs).
+regex_tokens([C|Cs], Acc, Rs, F) :- escaped(C, E), regex_tokens(Cs, [class(E)|Acc], Rs, F).
 
 % Recognize character classes.
-regex_tokens([C|Cs], Acc, Rs, _) :- digit(C), regex_tokens(Cs, [class('\\d')|Acc], Rs).
-regex_tokens([C|Cs], Acc, Rs, _) :- upper(C), regex_tokens(Cs, [class('[A-Z]')|Acc], Rs).
-regex_tokens([C|Cs], Acc, Rs, _) :- lower(C), regex_tokens(Cs, [class('[a-z]')|Acc], Rs).
-regex_tokens([C|Cs], Acc, Rs, _) :- letter(C), regex_tokens(Cs, [class('[a-zA-Z]')|Acc], Rs).
-regex_tokens([C|Cs], Acc, Rs, _) :- word(C), regex_tokens(Cs, [class('\\w')|Acc], Rs).
+regex_tokens([C|Cs], Acc, Rs, F) :- digit(C), regex_tokens(Cs, [class('\\d')|Acc], Rs, F).
+regex_tokens([C|Cs], Acc, Rs, F) :- upper(C), regex_tokens(Cs, [class('[A-Z]')|Acc], Rs, F).
+regex_tokens([C|Cs], Acc, Rs, F) :- lower(C), regex_tokens(Cs, [class('[a-z]')|Acc], Rs, F).
+regex_tokens([C|Cs], Acc, Rs, F) :- letter(C), regex_tokens(Cs, [class('[a-zA-Z]')|Acc], Rs, F).
+regex_tokens([C|Cs], Acc, Rs, F) :- word(C), regex_tokens(Cs, [class('\\w')|Acc], Rs, F).
 
 % Recognize repetition.
 regex_tokens([C|Cs], Acc, Rs, F) :- \+ F = plus, regex_tokens([C], [], [R], plus), regex_tokens(Cs, [plus(R)|Acc], Rs), \+ Acc = [R|_], \+ Acc = [plus(R)|_].
 regex_tokens([C|Cs], [plus(R)|Acc], Rs, F) :- \+ F = plus, regex_tokens([C], [], [R], plus), regex_tokens(Cs, [plus(R)|Acc], Rs).
 
 % Allow groups.
-regex_tokens(Cs, Acc, Rs, F) :- \+ F = group, create_group(Cs, Gs, Os), regex_tokens(Gs, [], R, group), regex_tokens(Os, [group(R)|Acc], Rs).
+regex_tokens(Cs, Acc, Rs, flags(F, G)) :- \+ F = group, create_group(Cs, Gs, Os), regex_tokens(Gs, [], R, group), regex_tokens(Os, [group(R)|Acc], Rs, flags(F, [Gs|G])).
 
 % Allow group repetition.
 regex_tokens(Cs, Acc, Rs, F) :- \+ F = group, create_group(Cs, Gs, Os), regex_tokens(Gs, [], R, group), regex_tokens(Os, [plus(group(R))|Acc], Rs).
@@ -86,3 +106,7 @@ regex_tokens("", Acc, Rs, _) :- reverse(Acc, Rs).
 % Split into groups.
 create_group([T1,T2|Ts], G, O) :- append(G, O, [T1,T2|Ts]), length(G, Lg), Lg >= 1.
 create_group(T, R, G, O) :- append(G, O, T), length(G, L), L >= 2, regex_tokens(G, [], R).
+
+% Find matches.
+matches(C, [[C]|Gs], N) :- length(Gs, Gl), N is Gl + 1.
+matches(C, [[G]|Gs], N) :- \+ C = G, matches(C, Gs, Gl), N is Gl + 1.

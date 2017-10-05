@@ -58,4 +58,11 @@ test(group_repetition) :-
             '(1+2+)+'
         ].
 
+test(back_reference) :-
+    findall(R, regex_multi(["121", "343"], ["112", "344"], R), Rs),
+        Rs == [
+            '(\\d)\\d$1',
+            '(\\d+)\\d$1'
+        ].
+
 :- end_tests(regex).
