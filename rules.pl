@@ -10,22 +10,28 @@ regex_tokens(Cs, Acc, Rs, flags(F, [G|Gs])) :-
 
 % Recognize characters as themselves, either escaped or unescaped as necessary.
 regex_tokens([C|Cs], Acc, Rs, F) :-
-    unescaped(C), regex_tokens(Cs, [class(C)|Acc], Rs, F)
-  ; escaped(C, E), regex_tokens(Cs, [class(E)|Acc], Rs, F).
+  ( unescaped(C), Class = C
+  ; escaped(C, E), Class = E
+  ),
+  regex_tokens(Cs, [class(Class)|Acc], Rs, F).
 
 % Recognize character classes.
 regex_tokens([C|Cs], Acc, Rs, F) :-
-    digit(C), regex_tokens(Cs, [class('\\d')|Acc], Rs, F)
-  ; upper(C),  regex_tokens(Cs, [class('[A-Z]')|Acc], Rs, F)
-  ; lower(C), regex_tokens(Cs, [class('[a-z]')|Acc], Rs, F)
-  ; letter(C), regex_tokens(Cs, [class('[a-zA-Z]')|Acc], Rs, F)
-  ; word(C), regex_tokens(Cs, [class('\\w')|Acc], Rs, F).
+  ( digit(C), Class = '\\d'
+  ; upper(C),  Class = '[A-Z]'
+  ; lower(C), Class = '[a-z]'
+  ; letter(C), Class = '[a-zA-Z]'
+  ; word(C), Class = '\\w'
+  ),
+  R = class(Class),
+  \+ Acc = [plus(R)|_], % want <>{N,} to be of form <>...<>+ (e.g., \\d\\d\\d+ instead of \\d\\d+\\d for 3+ digits)
+  regex_tokens(Cs, [R|Acc], Rs, F).
 
 % Recognize repetition for single characters.
 regex_tokens([C|Cs], Acc, Rs, F) :-
     \+ F = plus,
     regex_tokens([C], [], [R], plus),
-    \+ Acc = [R|_], \+ Acc = [plus(R)|_],
+    \+ Acc = [plus(R)|_],
     regex_tokens(Cs, [plus(R)|Acc], Rs, F).
 regex_tokens([C|Cs], [plus(R)|Acc], Rs, F) :-
     \+ F = plus,
