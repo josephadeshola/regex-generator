@@ -35,11 +35,20 @@ test(lower) :-
             '\\w+'
         ].
 
-test(repetition) :-
+test(repetition_only) :-
     findall(R, regex_multi(["1", "11", "111"], R), Rs),
         Rs == [
             '1+',
             '\\d+'
+        ].
+
+test(repetition_suffix) :-
+    findall(R, regex_multi(["1a", "22B", "333C"], ["1a1a"], R), Rs),
+        Rs == [
+            '\\d+[a-zA-Z]',
+            '\\d+\\w',
+            '\\d+[a-zA-Z]+',
+            '\\d+\\w+'
         ].
 
 test(negation) :-
