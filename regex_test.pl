@@ -35,18 +35,30 @@ test(lower) :-
             '\\w+'
         ].
 
-test(repetition) :-
+test(multi_char, nondet) :-
+    regex_multi(["12345", "67890"], '\\d\\d\\d\\d\\d').
+
+test(repetition_only) :-
     findall(R, regex_multi(["1", "11", "111"], R), Rs),
         Rs == [
             '1+',
             '\\d+'
         ].
 
-test(negation) :-
+test(repetition_suffix) :-
+    findall(R, regex_multi(["1a", "22B", "333C"], ["1a1a"], R), Rs),
+        Rs == [
+            '\\d+[a-zA-Z]',
+            '\\d+\\w',
+            '\\d+[a-zA-Z]+',
+            '\\d+\\w+'
+        ].
+
+test(multi_repetition) :-
     findall(R, regex_multi(["12", "345"], ["6"], R), Rs),
         Rs == [
-            '\\d+\\d',
-            '(\\d+\\d)+'
+            '\\d\\d+',
+            '(\\d\\d+)+'
         ].
 
 test(group_repetition) :-
