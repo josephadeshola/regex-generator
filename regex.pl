@@ -34,6 +34,6 @@ regex_multi([S|Ss], R) :- regex_tokens(S, [], Rs, flags('', [], Ss)), validate(R
 %   and strings in Xs. No duplicates will be returned.
 % regex_multi([S1, S2, ..., Sn], [X1, X2, ..., Xn], Rs) is equivalent to regex(S1, Rs), regex(S2, Rs), ...,
 %   regex(Sn, Rs), \+ regex(X1, Rs), \+ regex(X2, Rs), ..., \+ regex(Xn, Rs).
-regex_multi([S|Ss], Xs, R) :- regex(S, R), regex_multi(Ss, Xs, R).
+regex_multi([S|Ss], Xs, R) :- regex_multi([S|Ss], R), regex_multi([], Xs, R).
 regex_multi([], [X], R) :- \+ regex(X, R).
 regex_multi([], [X,X2|Xs], R) :- \+ regex(X, R), regex_multi([], [X2|Xs], R).
