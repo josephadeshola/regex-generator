@@ -12,7 +12,7 @@
 %   ?Rs - list of elements in a regular expression
 % If Rs is bound, checks if the regular expression represented by Rs matches Cs.
 % If Rs is not bound, returns (as Rs) all implemented regular expressions that match Cs. No duplicates will be returned.
-regex(Cs, R) :- regex_tokens(Cs, [], Rs, flags('', [])), validate(Rs), regex_encode(Rs, R).
+regex(Cs, R) :- regex_multi([Cs], R).
 
 % procedure regex_multi(+Ss, ?Rs):
 %   +Ss - list of strings or list of lists of characters
@@ -21,8 +21,9 @@ regex(Cs, R) :- regex_tokens(Cs, [], Rs, flags('', [])), validate(Rs), regex_enc
 % If Rs is not bound, returns (as Rs) all implemented regular expressions that match all strings in Ss. No duplicates
 %   will be returned.
 % regex_multi([S1, S2, ..., Sn], Rs) is equivalent to regex(S1, Rs), regex(S2, Rs), ..., regex(Sn, Rs).
-regex_multi([S,S2|Ss], R) :- regex(S, R), regex_multi([S2|Ss], R).
-regex_multi([S], R) :- regex(S, R).
+%regex_multi([S,S2|Ss], R) :- regex(S, R), regex_multi([S2|Ss], R).
+%regex_multi([S], R) :- regex(S, R).
+regex_multi([S|Ss], R) :- regex_tokens(S, [], Rs, flags('', [], Ss)), validate(Rs), regex_encode(Rs, R).
 
 % procedure regex_multi(+Ss, +Xs, ?Rs):
 %   +Ss - list of strings or list of lists of characters
