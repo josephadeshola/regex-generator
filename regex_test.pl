@@ -35,6 +35,13 @@ test(lower) :-
             '\\w+'
         ].
 
+% Commented out version is very slow on this branch, and very fast on simultaneous branch.
+%test(multi_char, nondet) :-
+%    regex_multi(["12345", "67890"], R),
+%        R = '\\d\\d\\d\\d\\d'.
+test(multi_char, nondet) :-
+    regex_multi(["12345", "67890"], '\\d\\d\\d\\d\\d').
+
 test(repetition_only) :-
     findall(R, regex_multi(["1", "11", "111"], R), Rs),
         Rs == [
@@ -51,7 +58,7 @@ test(repetition_suffix) :-
             '\\d+\\w+'
         ].
 
-test(negation) :-
+test(multi_repetition) :-
     findall(R, regex_multi(["12", "345"], ["6"], R), Rs),
         Rs == [
             '\\d\\d+',
