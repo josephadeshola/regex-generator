@@ -36,7 +36,8 @@ test(lower) :-
         ].
 
 test(multi_char, nondet) :-
-    regex_multi(["12345", "67890"], '\\d\\d\\d\\d\\d').
+    regex_multi(["12345", "67890"], R),
+        R = '\\d\\d\\d\\d\\d'.
 
 test(repetition_only) :-
     findall(R, regex_multi(["1", "11", "111"], R), Rs),
