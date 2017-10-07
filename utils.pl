@@ -20,19 +20,6 @@ matches_group(Cs, [G|Gs], N, Os) :-
   ; \+ append(G, _, Cs), matches_group(Cs, Gs, N, Os).
 
 
-% Update other strings to remove part matching T
-recurse(_, Acc, _, F) :-
-    fails_to_match_others(Acc, F),
-    !.
-
-recurse(Cs, Acc, Rs, F) :-
-    regex_tokens(Cs, Acc, Rs, F).
-
-fails_to_match_others(Acc, flag(_, G, O)) :-
-    member(E, O),
-    \+ (append(M, _, E), forward_match(M, Acc, G)).
-
-
 % Faster version of matching where both string and regex are known
 forward_match(S, [group([R])|Rs], Gs) :-
     !, % don't match groups in non-group clause
