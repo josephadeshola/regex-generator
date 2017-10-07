@@ -8,15 +8,24 @@ validate(Rs) :-
 validate([R|Rs], G) :-
     \+ functor(R, group, 1),
     \+ functor(R, plus, 1),
+    !,
     validate(Rs, G).
 
-validate([plus(R)|Rs], G) :-
-    \+ contains_group(R),
-    validate(Rs, G).
+validate([plus(group([R]))|Rs], G) :-
+    !,
+    group_validate([R]), Gn is G - 1,
+    validate(Rs, Gn).
 
 validate([plus(group(R))|Rs], G) :-
+    !,
     length(R, L), L >= 2,
     group_validate(R),
+    validate(Rs, G).
+
+
+validate([plus(R)|Rs], G) :-
+    !,
+    \+ contains_group(R),
     validate(Rs, G).
 
 validate([group([R])|Rs], G) :-
@@ -24,9 +33,6 @@ validate([group([R])|Rs], G) :-
     group_validate([R]), Gn is G - 1,
     validate(Rs, Gn).
 
-validate([plus(group([R]))|Rs], G) :-
-    group_validate([R]), Gn is G - 1,
-    validate(Rs, Gn).
 
 validate([], _).
 
@@ -44,16 +50,16 @@ contains_group(R) :-
 
 
 % Count the number of unique back references in a regex.
-back_count([R|Rs], Bs, N) :-  % not a back reference
-    \+ functor(R, back, 1),
-    back_count(Rs, Bs, N).
-
 back_count([back(B)|Rs], Bs, N) :- % repeat back reference
-    member(B, Bs),
+    member(B, Bs), !,
     back_count(Rs, Bs, N).
 
 back_count([back(B)|Rs], Bs, N) :- % new back reference
     \+ member(B, Bs),
     back_count(Rs, [B|Bs], Bn), N is Bn + 1.
+
+back_count([R|Rs], Bs, N) :-  % not a back reference
+    \+ functor(R, back, 1),
+    back_count(Rs, Bs, N).
 
 back_count([], _, 0). % base case
