@@ -5,10 +5,10 @@
 % Regular expression rules.
 
 
-% Recognize backreferences in single-character groups.
-regex_tokens(Cs, Acc, Rs, flags(F, [G|Gs], O)) :-
-    matches_group(Cs, [G|Gs], N, Os),
-    regex_tokens(Os, [back(N)|Acc], Rs, flags(F, [G|Gs], O)).
+% Recognize backreferences.
+regex_tokens(Cs, Acc, Rs, flags(F, [G|Groups], O)) :-
+    matches_group(Cs, [G|Groups], Index, Rest),
+    regex_tokens(Rest, [back(Index)|Acc], Rs, flags(F, [G|Groups], O)).
 
 
 % Recognize characters as themselves, either escaped or unescaped as necessary.
@@ -45,29 +45,29 @@ regex_tokens([C|Cs], [plus(R)|Acc], Rs, F) :-
 
 
 % Allow groups.
-regex_tokens(Cs, Acc, Rs, flags(F, G, O)) :-
+regex_tokens(Cs, Acc, Rs, flags(F, Gs, Os)) :-
     \+ F = group,
-    create_group(Cs, Gs, Os),
-    regex_tokens(Gs, [], R, flags(group, [], [])),
-    regex_tokens(Os, [group(R)|Acc], Rs, flags(F, [Gs|G], O)).
+    create_group(Cs, Group, Rest),
+    regex_tokens(Group, [], R, flags(group, [], [])),
+    regex_tokens(Rest, [group(R)|Acc], Rs, flags(F, [Group|Gs], Os)).
 
 
 % Allow group repetition.
 regex_tokens(Cs, Acc, Rs, F) :-
     \+ F = flags(group, _, _),
-    create_group(Cs, Gs, Os),
-    regex_tokens(Gs, [], R, flags(group, [], [])),
+    create_group(Cs, Group, Rest),
+    regex_tokens(Group, [], R, flags(group, [], [])),
     \+ R = [plus(_)], % don't allow stuff of form (<>+)+
-    regex_tokens(Os, [plus(group(R))|Acc], Rs, F).
+    regex_tokens(Rest, [plus(group(R))|Acc], Rs, F).
 
 regex_tokens(Cs, [plus(group(R))|Acc], Rs, F) :-
     \+ F = flags(group, _, _),
-    create_group(Cs, R, _, Os),
-    regex_tokens(Os, [plus(group(R))|Acc], Rs, F).
+    create_group(Cs, R, _, Rest),
+    regex_tokens(Rest, [plus(group(R))|Acc], Rs, F).
 
 
 % Base case.
-regex_tokens("", Acc, Rs, flags(_, _, O)) :-
+regex_tokens("", Acc, Rs, flags(_, _, Others)) :-
     reverse(Acc, Rs), % reverse for correct order
-    \+ (member(E, O), \+ forward_match(E, Rs, [])), % we've matched all the other strings
+    \+ (member(E, Others), \+ forward_match(E, Rs, [])), % we've matched all the other strings
     !.

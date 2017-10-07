@@ -9,15 +9,15 @@
 
 % procedure regex(+Cs, ?Rs):
 %   +Cs - string or list of characters
-%   ?Rs - list of elements in a regular expression
+%   ?R - atom  containing a regular expression
 regex(Cs, R) :-
     regex_multi([Cs], R).
 
 % procedure regex_multi(+Ss, ?Rs):
 %   +Ss - list of strings or list of lists of characters
-%   ?Rs - list of elements in a regular expression
-% If Rs is bound, checks if the regular expression represented by Rs matches all strings in Ss.
-% If Rs is not bound, returns (as Rs) all implemented regular expressions that match all strings in Ss. No duplicates
+%   ?R - atom  containing a regular expression
+% If R is bound, checks if the regular expression represented by R matches all strings in Ss.
+% If R is not bound, returns (as R) an implemented regular expressions that matches all strings in Ss. No duplicates
 %   will be returned.
 regex_multi([S|Ss], R) :-
     regex_tokens(S, [], Rs, flags('', [], Ss)),
@@ -27,10 +27,10 @@ regex_multi([S|Ss], R) :-
 % procedure regex_multi(+Ss, +Xs, ?Rs):
 %   +Ss - list of strings or list of lists of characters
 %   +Xs - list of strings or list of lists of characters
-%   ?Rs - list of elements in a regular expression
-% If Rs is bound, checks if the regular expression represented by Rs matches all strings in Ss.
-% If Rs is not bound, returns (as Rs) all implemented regular expressions that match all strings in Ss, and do not match
-%   and strings in Xs. No duplicates will be returned.
+%   ?R - atom  containing a regular expression
+% If R is bound, checks if the regular expression represented by R matches all strings in Ss and none in Xs.
+% If Rs is not bound, returns (as R) an implemented regular expressions that matches all strings in Ss, and does not
+%   match and of the strings in Xs. No duplicates will be returned.
 regex_multi([S|Ss], Xs, R) :-
     regex_tokens(S, [], Rs, flags('', [], Ss)),
     validate(Rs),

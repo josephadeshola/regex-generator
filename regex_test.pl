@@ -47,12 +47,10 @@ test(repetition_only) :-
         ].
 
 test(repetition_suffix) :-
-    findall(R, regex_multi(["1a", "22B", "333C"], ["1a1a"], R), Rs),
+    findall(R, regex_multi(["1a", "22B", "333C"], ["1a1a", "1AA", "1aa"], R), Rs),
         Rs == [
             '\\d+[a-zA-Z]',
-            '\\d+\\w',
-            '\\d+[a-zA-Z]+',
-            '\\d+\\w+'
+            '\\d+\\w'
         ].
 
 test(multi_repetition) :-
@@ -63,16 +61,20 @@ test(multi_repetition) :-
         ].
 
 test(group_repetition) :-
-    findall(R, regex_multi(["12", "1212"], ["13", "3232"], R), Rs),
+    findall(R, regex_multi(["12", "1212"], ["13", "3232", "112", "122"], R), Rs),
         Rs == [
-            '(12)+',
-            '(12+)+',
-            '(1+2)+',
-            '(1+2+)+'
+            '(12)+'
         ].
 
 test(back_references, nondet) :-
-    regex("12321", '(\\d)(\\d)\\d$2$1').
+    regex("12321", R),
+        R = '(\\d)(\\d)\\d$2$1'.
+
+test(odd_ones, nondet) :-
+    regex_multi(["111", "11111"], ["333", "311", "131", "113", "133", "11", "1111"], R),
+        R = '1(1+)$1',
+    regex_multi(["111", "11111"], ["333", "311", "131", "113", "133", "11", "1111"], R2),
+        R2 = '1(11)+'.
 
 % This test is slow.  Uncomment at your own risk.
 %test(back_reference) :-
