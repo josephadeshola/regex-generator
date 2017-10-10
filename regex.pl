@@ -1,7 +1,7 @@
 :- use_module(library(lists)).
-:- consult('rules.pl').
-:- consult('validate.pl').
-:- consult('encode.pl').
+:- compile('rules.pl').
+:- compile('validate.pl').
+:- compile('encode.pl').
 
 % Strings should be interpreted as a list of character atoms.
 :- set_prolog_flag('double_quotes', 'chars').

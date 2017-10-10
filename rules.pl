@@ -1,5 +1,5 @@
-:- consult('characters.pl').
-:- consult('utils.pl').
+:- compile('characters.pl').
+:- compile('utils.pl').
 
 
 % Regular expression rules.

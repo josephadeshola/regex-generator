@@ -1,5 +1,5 @@
 :- use_module(library(plunit)).
-:- consult('regex.pl').
+:- compile('regex.pl').
 
 % Removing this rule to more easily test repetition etc.
 :- retract((word(C) :- digit(C))).
