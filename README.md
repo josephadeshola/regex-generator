@@ -6,6 +6,8 @@ It is also possible to provide a list of strings to not match, though this tends
 
 ## Code
 
+The code is written to run on SICStus Prolog.
+
 To see some of what this program can do, read the tests or run them as follows:
 
 ```
